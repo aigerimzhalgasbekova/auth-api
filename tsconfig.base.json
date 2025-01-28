@@ -1,0 +1,17 @@
+{
+    "extends": "./tsconfig-node-22.json",
+    "compilerOptions": {
+        "declaration": true,
+        "noImplicitAny": false,
+        "noLib": false,
+        "sourceMap": true,
+        "pretty": true,
+    },
+    "exclude": [
+        "node_modules",
+        "**/tests/**",
+        "**/build/**",
+        "**/coverage/**",
+        "cdk.out",
+    ]
+}

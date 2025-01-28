@@ -1,0 +1,17 @@
+// refer https://github.com/tsconfig/bases/blob/main/bases/node22.json
+{
+    "$schema": "https://json.schemastore.org/tsconfig",
+    "display": "Node 22",
+    "_version": "22.0.0",
+    "compilerOptions": {
+        "lib": [
+            "es2023"
+        ],
+        "module": "node16",
+        "target": "es2022",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "moduleResolution": "node16"
+    }
+}

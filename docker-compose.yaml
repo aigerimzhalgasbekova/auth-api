@@ -1,0 +1,25 @@
+services:
+  localstack:
+    image: localstack/localstack:3.8
+    ports:
+      - "4566:4566" # LocalStack edge port
+      - "4571:4571" # KMS
+      - "4510-4559:4510-4559" # external services port range
+    environment:
+      - SERVICES=dynamodb,apigateway,lambda,kms
+      - DEBUG=1
+      # set AWS configrations for localstack
+      - AWS_DEFAULT_REGION=eu-west-1
+      - AWS_ACCESS_KEY_ID=key
+      - AWS_SECRET_ACCESS_KEY=secret
+    networks:
+      - auth_api
+    volumes:
+      # share lambda source code with localstack
+      - ./build:/etc/localstack/init/build
+      # localstack needs docker to run lambdas
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+networks:
+  auth_api:
+    driver: bridge

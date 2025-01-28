@@ -1,0 +1,9 @@
+.vscode
+
+dist
+build
+node_modules
+coverage
+pubkey.*
+output.*
+.DS_Store
