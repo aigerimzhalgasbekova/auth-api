@@ -47,3 +47,4 @@ const echoApiStack = new EchoApiStack(app, 'EchoApiStack', {
 // Add dependencies
 tokenIssuerStack.addDependency(networkStack);
 echoApiStack.addDependency(networkStack);
+echoApiStack.addDependency(tokenIssuerStack);
