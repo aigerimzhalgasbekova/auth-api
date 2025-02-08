@@ -7,3 +7,5 @@ coverage
 pubkey.*
 output.*
 .DS_Store
+
+cdk.out
