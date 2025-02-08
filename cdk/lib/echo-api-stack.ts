@@ -52,6 +52,7 @@ export class EchoApiStack extends cdk.Stack {
             assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
             managedPolicies: [
                 iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
             ],
             inlinePolicies: {
                 'KmsKeyAccess': new iam.PolicyDocument({
@@ -64,7 +65,7 @@ export class EchoApiStack extends cdk.Stack {
                             resources: [props.jwtSigningKey.keyArn]
                         })
                     ]
-                })
+                }),
             }
         });
 
@@ -87,6 +88,7 @@ export class EchoApiStack extends cdk.Stack {
             assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
             managedPolicies: [
                 iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
             ],
         });
 
@@ -105,6 +107,7 @@ export class EchoApiStack extends cdk.Stack {
 
         // Create API Gateway
         const api = new apigateway.RestApi(this, 'EchoApi', {
+            cloudWatchRole: true,
             description: 'Echo API with JWT authorization',
             deployOptions: {
                 stageName: 'prod',

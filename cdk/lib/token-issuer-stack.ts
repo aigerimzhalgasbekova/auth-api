@@ -38,6 +38,7 @@ export class TokenIssuerStack extends cdk.Stack {
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption: dynamodb.TableEncryption.AWS_MANAGED,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
+            tableName: 'user-credentials',
         });
 
         // Get code location based on LOCALDEV environment variable
@@ -65,6 +66,7 @@ export class TokenIssuerStack extends cdk.Stack {
             assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
             managedPolicies: [
                 iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
             ],
             inlinePolicies: {
                 'TokenTableAccess': new iam.PolicyDocument({
@@ -89,7 +91,7 @@ export class TokenIssuerStack extends cdk.Stack {
                             resources: [this.jwtSigningKey.keyArn]
                         })
                     ]
-                })
+                }),
             }
         });
 
@@ -118,6 +120,7 @@ export class TokenIssuerStack extends cdk.Stack {
 
         // Create API Gateway
         const api = new apigateway.RestApi(this, 'TokenIssuerApi', {
+            cloudWatchRole: true,
             description: 'API for issuing authentication tokens',
             deployOptions: {
                 stageName: 'prod',
