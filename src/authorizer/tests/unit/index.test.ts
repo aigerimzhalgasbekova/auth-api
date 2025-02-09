@@ -1,4 +1,8 @@
-import { KMSClient, KMSInvalidSignatureException, VerifyCommand } from '@aws-sdk/client-kms';
+import {
+    KMSClient,
+    KMSInvalidSignatureException,
+    VerifyCommand,
+} from '@aws-sdk/client-kms';
 import {
     APIGatewayTokenAuthorizerEvent,
     APIGatewayAuthorizerResult,
@@ -68,12 +72,14 @@ describe('handler', () => {
         );
 
         // when the signature verification fails the KMS command will throw KMSInvalidSignatureException
-        kmsMock.on(VerifyCommand).rejects(new KMSInvalidSignatureException({
-            $metadata: {
-                httpStatusCode: 400,
-            },
-            message: 'Invalid signature',
-        }));
+        kmsMock.on(VerifyCommand).rejects(
+            new KMSInvalidSignatureException({
+                $metadata: {
+                    httpStatusCode: 400,
+                },
+                message: 'Invalid signature',
+            }),
+        );
 
         await expect(handler(event)).rejects.toThrow(unauthorizedError);
         expect(kmsMock.calls().length).toBe(1);

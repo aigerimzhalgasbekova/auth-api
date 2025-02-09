@@ -47,7 +47,9 @@ export const handler = async (
             throw error;
         }
         if (error instanceof KMSInvalidSignatureException) {
-            throw new UnauthorizedError('not authorized to access this service');
+            throw new UnauthorizedError(
+                'not authorized to access this service',
+            );
         }
         throw new Error('Unauthorized');
     }
