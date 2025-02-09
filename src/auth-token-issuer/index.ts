@@ -60,7 +60,7 @@ export const handler = async (event: APIGatewayEvent) => {
 const existInDynamoDB = async (username, password) => {
     const ddbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
     const queryCommand = new QueryCommand({
-        TableName: 'Users',
+        TableName: process.env.USER_CREDENTIALS_TABLE,
         KeyConditionExpression: 'Username = :username and Password = :password',
         ExpressionAttributeValues: {
             ':username': username,

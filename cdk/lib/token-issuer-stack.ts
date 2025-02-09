@@ -32,13 +32,14 @@ export class TokenIssuerStack extends cdk.Stack {
             keySpec: kms.KeySpec.RSA_2048,
         });
 
-        // Create DynamoDB table for storing token information
+        // Create DynamoDB table for storing existing users information
         const tokenTable = new dynamodb.Table(this, 'TokenTable', {
-            partitionKey: { name: 'id', type: dynamodb.AttributeType.STRING },
+            partitionKey: { name: 'Username', type: dynamodb.AttributeType.STRING },
+            sortKey: { name: 'Password', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption: dynamodb.TableEncryption.AWS_MANAGED,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
-            tableName: 'user-credentials',
+            tableName: 'existing-users',
         });
 
         // Get code location based on LOCALDEV environment variable
@@ -108,7 +109,7 @@ export class TokenIssuerStack extends cdk.Stack {
                 securityGroups: [props.securityGroup],
                 environment: {
                     KMS_KEY_ALIAS_NAME: props.signingKeyAlias,
-                    TOKEN_TABLE: tokenTable.tableName,
+                    USER_CREDENTIALS_TABLE: tokenTable.tableName,
                 },
                 role: authTokenIssuerRole,
             },
