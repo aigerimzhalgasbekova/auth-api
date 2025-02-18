@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install dependencies
+      - name: Build Lambda packages
         run: |
           # Create the dist directory if it doesn't exist
           mkdir -p $DIST_DIR
