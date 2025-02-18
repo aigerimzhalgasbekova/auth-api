@@ -11,7 +11,7 @@ jobs:
   build:
     permissions:
       contents: read
-    runs-on: codebuild-aigerimzhalgasbekova-auth-api-${{github.run_id}}-${{github.run_attempt}}
+    runs-on: ${{ github.event_name == 'pull_request' ? 'ubuntu-latest' : format('codebuild-aigerimzhalgasbekova-auth-api-{0}-{1}', github.run_id, github.run_attempt) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -46,6 +46,7 @@ jobs:
           SRC_DIR: src
           DIST_DIR: dist
       - name: Upload artifacts to S3
+        if: github.event_name != 'pull_request'
         run: |
           aws s3 cp $DIST_DIR s3://$S3_BUCKET/$S3_PREFIX/ --recursive
         env:
