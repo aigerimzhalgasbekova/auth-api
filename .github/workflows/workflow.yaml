@@ -7,10 +7,11 @@ on:
     branches:
       - master
 
+env:
+  ARTIFACT_BUCKET_NAME: az-artifacts-bucket
+  SERVICE_NAME: auth-api
+
 jobs:
-  env:
-    ARTIFACT_BUCKET_NAME: az-artifacts-bucket
-    SERVICE_NAME: auth-api
   build:
     permissions:
       contents: write
