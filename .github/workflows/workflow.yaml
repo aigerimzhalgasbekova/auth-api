@@ -61,7 +61,7 @@ jobs:
 
   deploy:
     if: github.event_name != 'pull_request'
-    name: Deploy ${{ needs.build.outputs.Version }}
+    name: Deploy to AWS
     needs: build
     permissions:
       contents: read
@@ -73,7 +73,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Deploy CloudFormation stacks with CDK
+      - name: Deploy ${{ needs.build.outputs.Version }} CloudFormation stacks with CDK
         run: |
           cd cdk
 
