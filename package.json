@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "semantic-release-ado": "^1.4.0"
+  }
+}

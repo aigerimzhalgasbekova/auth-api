@@ -1,0 +1,90 @@
+name: Build and Deploy
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+env:
+  ARTIFACT_BUCKET_NAME: az-artifacts-bucket
+  SERVICE_NAME: auth-api
+
+jobs:
+  build:
+    permissions:
+      contents: write
+      id-token: write
+    runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || format('codebuild-aigerimzhalgasbekova-auth-api-{0}-{1}', github.run_id, github.run_attempt) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Create a new version with semantic-release
+        # if: github.event_name != 'pull_request'
+        id: semantic-release
+        run: |
+          npm ci
+          npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Lambda packages
+        run: |
+          # Create the dist directory if it doesn't exist
+          mkdir -p $DIST_DIR
+
+          # Loop through each module in the src directory
+          for module in $SRC_DIR/*; do
+            if [ -d "$module" ]; then
+              cd $module
+              npm ci
+              npm run dist
+              cd -
+              # Copy the resulting files to the dist directory
+              cp $module/dist/*-$Version.zip $DIST_DIR/
+              cp $module/dist/*-$Version.sha256 $DIST_DIR/
+              # Remove the $module/dist/ directory
+              rm -rf $module/dist/
+            fi
+          done
+        env:
+          SRC_DIR: src
+          DIST_DIR: dist
+      - name: Upload artifacts to S3
+        if: github.event_name != 'pull_request'
+        run: |
+          aws s3 cp $DIST_DIR s3://$ARTIFACT_BUCKET_NAME/$SERVICE_NAME/ --recursive
+        env:
+          DIST_DIR: dist
+
+  deploy:
+    if: github.event_name != 'pull_request'
+    name: Deploy to AWS
+    needs: build
+    permissions:
+      contents: read
+    runs-on: codebuild-aigerimzhalgasbekova-auth-api-${{github.run_id}}-${{github.run_attempt}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Deploy ${{ needs.build.outputs.Version }} CloudFormation stacks with CDK
+        run: |
+          cd cdk
+
+          # Install the dependencies
+          npm ci
+
+          # Deploy the stacks
+          npm run cdk deploy --require-approval never
+        env:
+          VERSION: ${{ needs.build.outputs.Version }}
+          CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+          CDK_DEFAULT_REGION: eu-west-1
