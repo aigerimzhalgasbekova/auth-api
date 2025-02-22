@@ -1,5 +1,5 @@
 {
   "devDependencies": {
-    "semantic-release-ado": "^1.4.0"
+    "@semantic-release/exec": "^7.0.3"
   }
 }
