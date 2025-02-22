@@ -24,7 +24,8 @@ const tokenIssuerStack = new TokenIssuerStack(app, 'TokenIssuerStack', {
     vpc: networkStack.vpc,
     securityGroup: networkStack.lambdaSecurityGroup,
     signingKeyAlias: process.env.SIGNING_KEY_ALIAS || 'alias/signing-key',
-    artifactBucketName: process.env.ARTIFACT_BUCKET_NAME || 'az-artifacts-bucket',
+    artifactBucketName:
+        process.env.ARTIFACT_BUCKET_NAME || 'az-artifacts-bucket',
     serviceName: process.env.SERVICE_NAME || 'auth-api',
     version: process.env.VERSION || '0.0.1',
 });
@@ -39,7 +40,8 @@ const echoApiStack = new EchoApiStack(app, 'EchoApiStack', {
     securityGroup: networkStack.lambdaSecurityGroup,
     jwtSigningKey: tokenIssuerStack.jwtSigningKey,
     signingKeyAlias: process.env.SIGNING_KEY_ALIAS || 'alias/signing-key',
-    artifactBucketName: process.env.ARTIFACT_BUCKET_NAME || 'az-artifacts-bucket',
+    artifactBucketName:
+        process.env.ARTIFACT_BUCKET_NAME || 'az-artifacts-bucket',
     serviceName: process.env.SERVICE_NAME || 'auth-api',
     version: process.env.VERSION || '0.0.1',
 });
