@@ -44,29 +44,34 @@ export class EchoApiStack extends cdk.Stack {
                 artifactBucket,
                 `${props.serviceName}/authorizer-${props.version}.zip`,
             );
-            echoCode = lambda.Code.fromBucket(artifactBucket, `${props.serviceName}/echo-${props.version}.zip`);
+            echoCode = lambda.Code.fromBucket(
+                artifactBucket,
+                `${props.serviceName}/echo-${props.version}.zip`,
+            );
         }
 
         // Create IAM role for the Authorizer function
         const authorizerRole = new iam.Role(this, 'AuthorizerRole', {
             assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
             managedPolicies: [
-                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
-                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName(
+                    'service-role/AWSLambdaVPCAccessExecutionRole',
+                ),
+                iam.ManagedPolicy.fromAwsManagedPolicyName(
+                    'service-role/AWSLambdaBasicExecutionRole',
+                ),
             ],
             inlinePolicies: {
-                'KmsKeyAccess': new iam.PolicyDocument({
+                KmsKeyAccess: new iam.PolicyDocument({
                     statements: [
                         new iam.PolicyStatement({
                             effect: iam.Effect.ALLOW,
-                            actions: [
-                                'kms:Verify',
-                            ],
-                            resources: [props.jwtSigningKey.keyArn]
-                        })
-                    ]
+                            actions: ['kms:Verify'],
+                            resources: [props.jwtSigningKey.keyArn],
+                        }),
+                    ],
                 }),
-            }
+            },
         });
 
         // Create Lambda functions
@@ -87,8 +92,12 @@ export class EchoApiStack extends cdk.Stack {
         const echoRole = new iam.Role(this, 'EchoRole', {
             assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
             managedPolicies: [
-                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
-                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName(
+                    'service-role/AWSLambdaVPCAccessExecutionRole',
+                ),
+                iam.ManagedPolicy.fromAwsManagedPolicyName(
+                    'service-role/AWSLambdaBasicExecutionRole',
+                ),
             ],
         });
 

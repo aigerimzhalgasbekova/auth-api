@@ -12,7 +12,5 @@ plugins:
         - type: 'chore'
           release: 'patch'
   - '@semantic-release/release-notes-generator'
-  - - 'semantic-release-ado'
-    - varName: "Version"
-      setOnlyOnRelease: true
-      isOutput: true
+  - - '@semantic-release/exec'
+    - verifyReleaseCmd: echo "Version=${nextRelease.version}" >> $GITHUB_ENV
