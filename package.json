@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "conventional-changelog-conventionalcommits": "^8.0.0",
     "semantic-release-ado": "^1.4.0"
   }
 }
