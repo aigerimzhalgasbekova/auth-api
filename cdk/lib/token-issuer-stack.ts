@@ -34,7 +34,10 @@ export class TokenIssuerStack extends cdk.Stack {
 
         // Create DynamoDB table for storing existing users information
         const tokenTable = new dynamodb.Table(this, 'TokenTable', {
-            partitionKey: { name: 'Username', type: dynamodb.AttributeType.STRING },
+            partitionKey: {
+                name: 'Username',
+                type: dynamodb.AttributeType.STRING,
+            },
             sortKey: { name: 'Password', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption: dynamodb.TableEncryption.AWS_MANAGED,
@@ -66,34 +69,33 @@ export class TokenIssuerStack extends cdk.Stack {
         const authTokenIssuerRole = new iam.Role(this, 'AuthTokenIssuerRole', {
             assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
             managedPolicies: [
-                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaVPCAccessExecutionRole'),
-                iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'),
+                iam.ManagedPolicy.fromAwsManagedPolicyName(
+                    'service-role/AWSLambdaVPCAccessExecutionRole',
+                ),
+                iam.ManagedPolicy.fromAwsManagedPolicyName(
+                    'service-role/AWSLambdaBasicExecutionRole',
+                ),
             ],
             inlinePolicies: {
-                'TokenTableAccess': new iam.PolicyDocument({
+                TokenTableAccess: new iam.PolicyDocument({
                     statements: [
                         new iam.PolicyStatement({
                             effect: iam.Effect.ALLOW,
-                            actions: [
-                                'dynamodb:Query',
-                                'dynamodb:GetItem',
-                            ],
-                            resources: [tokenTable.tableArn]
-                        })
-                    ]
+                            actions: ['dynamodb:Query', 'dynamodb:GetItem'],
+                            resources: [tokenTable.tableArn],
+                        }),
+                    ],
                 }),
-                'KmsKeyAccess': new iam.PolicyDocument({
+                KmsKeyAccess: new iam.PolicyDocument({
                     statements: [
                         new iam.PolicyStatement({
                             effect: iam.Effect.ALLOW,
-                            actions: [
-                                'kms:Sign',
-                            ],
-                            resources: [this.jwtSigningKey.keyArn]
-                        })
-                    ]
+                            actions: ['kms:Sign'],
+                            resources: [this.jwtSigningKey.keyArn],
+                        }),
+                    ],
                 }),
-            }
+            },
         });
 
         // Create Lambda function
