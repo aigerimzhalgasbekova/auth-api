@@ -16,7 +16,7 @@ const compat = new FlatCompat({
 });
 
 export default [{
-    ignores: ["**/build/", "**/dist/", "**/coverage/", "**/*.js"],
+    ignores: ["**/build/", "**/dist/", "**/coverage/", "**/*.js", "**/cdk.out/"],
 }, ...compat.extends(
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended",
@@ -51,5 +51,4 @@ export default [{
         "prettier/prettier": 2,
         eqeqeq: "warn",
     },
-    ignores: ['build/', 'dist/', 'coverage/', '*.js'],
 }];
