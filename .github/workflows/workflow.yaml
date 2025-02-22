@@ -24,6 +24,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Install CDK dependencies and run unit tests
+        run: |
+          cd cdk
+          npm ci
+          npm test
+          cd -
       - name: Create a new version with semantic-release
         if: github.event_name != 'pull_request'
         id: semantic-release
@@ -62,7 +68,7 @@ jobs:
           DIST_DIR: dist
 
   deploy:
-    if: github.event_name != 'pull_request'
+    if: ${{ github.event_name != 'pull_request' && needs.build.outputs.Version }}
     name: Deploy to AWS
     needs: build
     permissions:
@@ -83,7 +89,7 @@ jobs:
           npm ci
 
           # Deploy the stacks
-          npm run cdk deploy --require-approval never
+          npm run deploy
         env:
           VERSION: ${{ needs.build.outputs.Version }}
           CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
