@@ -13,4 +13,6 @@ plugins:
           release: 'patch'
   - '@semantic-release/release-notes-generator'
   - - '@semantic-release/exec'
-    - verifyReleaseCmd: echo "Version=${nextRelease.version}" >> $GITHUB_ENV
+    - successCmd: |
+        echo "Version=${nextRelease.version}" >> $GITHUB_ENV
+        echo "Version=${nextRelease.version}" >> $GITHUB_OUTPUT

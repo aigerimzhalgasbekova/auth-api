@@ -38,7 +38,6 @@ jobs:
         run: |
           npm ci
           npx semantic-release
-          echo "Version=$Version" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Lambda packages
@@ -71,9 +70,9 @@ jobs:
           DIST_DIR: dist
 
   deploy:
-    if: ${{ github.event_name != 'pull_request' && needs.build.outputs.Version }}
     name: Deploy to AWS
     needs: build
+    if: ${{ github.event_name != 'pull_request' && needs.build.outputs.Version }}
     permissions:
       contents: read
     runs-on: codebuild-aigerimzhalgasbekova-auth-api-${{github.run_id}}-${{github.run_attempt}}
