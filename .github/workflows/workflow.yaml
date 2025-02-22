@@ -25,7 +25,7 @@ jobs:
         with:
           node-version: 22
       - name: Create a new version with semantic-release
-        # if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request'
         id: semantic-release
         run: |
           npm ci
