@@ -19,14 +19,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Create a new version with semantic-release
-        # if: github.event_name != 'pull_request'
-        id: semantic-release
-        run: npx semantic-release
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Create a new version with semantic-release
+        # if: github.event_name != 'pull_request'
+        id: semantic-release
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Lambda packages
         run: |
           # Create the dist directory if it doesn't exist
