@@ -65,7 +65,7 @@ jobs:
     needs: build
     permissions:
       contents: read
-    uses: format('codebuild-aigerimzhalgasbekova-auth-api-{0}-{1}', github.run_id, github.run_attempt)
+    runs-on: codebuild-aigerimzhalgasbekova-auth-api-${{github.run_id}}-${{github.run_attempt}}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
