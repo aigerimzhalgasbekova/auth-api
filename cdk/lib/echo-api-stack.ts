@@ -111,9 +111,6 @@ export class EchoApiStack extends cdk.Stack {
             securityGroups: [props.securityGroup],
         });
 
-        // Grant permissions
-        // props.jwtSigningKey.grantDecrypt(authorizerFn);
-
         // Create API Gateway
         const api = new apigateway.RestApi(this, 'EchoApi', {
             cloudWatchRole: true,
@@ -136,10 +133,22 @@ export class EchoApiStack extends cdk.Stack {
             },
         );
 
-        // Add routes
-        const echo = api.root.addResource('echo');
-        echo.addMethod('POST', new apigateway.LambdaIntegration(echoFn), {
+        // Create integration and method options
+        const defaultIntegration = new apigateway.LambdaIntegration(echoFn, {
+            proxy: true,
+        });
+        const defaultMethodOptions = {
             authorizer: apiAuthorizer,
+            authorizationType: apigateway.AuthorizationType.CUSTOM,
+        };
+
+        // Add resources and methods
+        api.root.addResource('echo');
+        api.root.addMethod('ANY', defaultIntegration, defaultMethodOptions);
+        api.root.addProxy({
+            defaultIntegration,
+            defaultMethodOptions,
+            anyMethod: true,
         });
 
         // Output values
