@@ -27,7 +27,9 @@ jobs:
       - name: Create a new version with semantic-release
         # if: github.event_name != 'pull_request'
         id: semantic-release
-        run: npx semantic-release
+        run: |
+          npm ci
+          npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Lambda packages
