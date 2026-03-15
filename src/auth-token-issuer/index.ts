@@ -76,7 +76,7 @@ const sign = async (username) => {
 
     // create JWT components
     const headers = {
-        alg: 'RS256',
+        alg: 'PS256',
         typ: 'JWT',
         kid: kmsKeyAliasName,
     };
@@ -116,8 +116,8 @@ const sign = async (username) => {
             body: JSON.stringify({ message: 'Internal server error' }),
         };
     }
-    tokenComponents['signature'] = Buffer.from(signResponse.Signature).toString(
-        'base64',
+    tokenComponents['signature'] = base64url.encode(
+        Buffer.from(signResponse.Signature),
     );
     // JWT token is a concatenation of header, payload and signature separated by dots
     const token =
