@@ -83,8 +83,7 @@ describe('Authorization Code Flow with PKCE', () => {
             expect(result.statusCode).toBe(400);
             expect(JSON.parse(result.body)).toEqual({
                 error: 'invalid_request',
-                error_description:
-                    'code_challenge_method must be "S256" or "plain"',
+                error_description: 'code_challenge_method must be "S256"',
             });
         });
 
@@ -124,13 +123,12 @@ describe('Authorization Code Flow with PKCE', () => {
             const result = await handler(event);
 
             expect(result.statusCode).toBe(302);
-            expect(result.headers?.Location).toContain('https://example.com/callback');
+            expect(result.headers?.Location).toContain(
+                'https://example.com/callback',
+            );
             expect(result.headers?.Location).toContain('code=');
             expect(result.headers?.Location).toContain('state=test-state');
-
-            const responseBody = JSON.parse(result.body);
-            expect(responseBody).toHaveProperty('code');
-            expect(responseBody.state).toBe('test-state');
+            expect(result.body).toBe('');
         });
 
         it('should handle KMS signing failure', async () => {

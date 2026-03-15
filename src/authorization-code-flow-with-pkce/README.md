@@ -20,7 +20,7 @@ The `/authorize` endpoint accepts the following parameters:
 - `client_id`: The client identifier
 - `redirect_uri`: The redirect URI where the authorization code will be sent
 - `code_challenge`: The PKCE code challenge
-- `code_challenge_method`: The PKCE code challenge method (`"S256"` or `"plain"`)
+- `code_challenge_method`: The PKCE code challenge method (must be `"S256"`)
 
 ### Optional Parameters
 
@@ -42,14 +42,7 @@ HTTP/1.1 302 Found
 Location: https://example.com/callback?code=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImFsaWFzL3NpZ25pbmcta2V5In0...&state=xyz123
 ```
 
-The response body also contains the authorization code and state:
-
-```json
-{
-  "code": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImFsaWFzL3NpZ25pbmcta2V5In0...",
-  "state": "xyz123"
-}
-```
+The authorization code is delivered to the client app via the redirect URI query parameters. The client app's callback endpoint extracts the `code` parameter and exchanges it for tokens.
 
 ## Authorization Code Format
 
@@ -130,4 +123,4 @@ This authorization code flow module is designed to work with the existing token 
 
 - [OAuth 2.0 Authorization Code Flow](https://tools.ietf.org/html/rfc6749#section-4.1)
 - [PKCE Extension](https://tools.ietf.org/html/rfc7636)
-- [OAuth 2.0 Security Best Practices](https://tools.ietf.org/html/draft-ietf-oauth-security-topics) 
+- [OAuth 2.0 Security Best Practices](https://tools.ietf.org/html/draft-ietf-oauth-security-topics)

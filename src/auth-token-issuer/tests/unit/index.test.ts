@@ -65,6 +65,33 @@ describe('Test issueing JWT token', () => {
         expect(ddbDocMock.calls().length).toBe(1);
         expect(kmsMock.calls().length).toBe(1);
     });
+    test('should use base64url encoding for JWT token parts', async () => {
+        const event = {
+            headers: {
+                Authorization: 'Basic dGVzdDp0ZXN0', // test:test base64 encoded
+            },
+        };
+        ddbDocMock.on(QueryCommand).resolves({
+            Items: [
+                {
+                    Username: 'test',
+                    Password: 'test',
+                },
+            ],
+        });
+        kmsMock.on(SignCommand).resolves({
+            Signature: Buffer.from([0xff, 0xfe, 0xfd]),
+        });
+        const response = await handler(event as unknown as APIGatewayEvent);
+        expect(response.statusCode).toBe(200);
+        const token = JSON.parse(response.body).access_token;
+        const [header, payload, signature] = token.split('.');
+        // base64url must not contain +, /, or = characters
+        const base64urlRegex = /^[A-Za-z0-9_-]+$/;
+        expect(header).toMatch(base64urlRegex);
+        expect(payload).toMatch(base64urlRegex);
+        expect(signature).toMatch(base64urlRegex);
+    });
     test('should return 500 when KMS signature is missing', async () => {
         const event = {
             headers: {

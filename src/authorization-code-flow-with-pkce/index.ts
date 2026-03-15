@@ -37,11 +37,11 @@ interface TokenComponents {
 
 export const handler = async (event: APIGatewayEvent) => {
     console.debug(`Authorization request: ${JSON.stringify(event)}`);
-    
+
     try {
         // Parse query parameters
         const queryParams = event.queryStringParameters || {};
-        
+
         // Validate required parameters
         const validationResult = validateAuthorizationRequest(queryParams);
         if (!validationResult.valid) {
@@ -49,9 +49,9 @@ export const handler = async (event: APIGatewayEvent) => {
                 isBase64Encoded: false,
                 statusCode: 400,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     error: 'invalid_request',
-                    error_description: validationResult.message 
+                    error_description: validationResult.message,
                 }),
             };
         }
@@ -60,32 +60,34 @@ export const handler = async (event: APIGatewayEvent) => {
 
         // Generate authorization code as self-encoded token
         const authorizationCode = await generateAuthorizationCode(authRequest);
-        
+
         // Build redirect URL
-        const redirectUrl = buildRedirectUrl(authRequest.redirect_uri, authorizationCode, authRequest.state);
-        
+        const redirectUrl = buildRedirectUrl(
+            authRequest.redirect_uri,
+            authorizationCode,
+            authRequest.state,
+        );
+
         return {
             isBase64Encoded: false,
             statusCode: 302,
-            headers: { 
-                'Location': redirectUrl,
-                'Content-Type': 'application/json'
+            headers: {
+                Location: redirectUrl,
             },
-            body: JSON.stringify({ 
-                code: authorizationCode,
-                state: authRequest.state 
-            }),
+            body: '',
         };
-        
     } catch (error) {
-        console.error(`Error processing authorization request: ${error}`, error);
+        console.error(
+            `Error processing authorization request: ${error}`,
+            error,
+        );
         return {
             isBase64Encoded: false,
             statusCode: 500,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 error: 'server_error',
-                error_description: 'Internal server error' 
+                error_description: 'Internal server error',
             }),
         };
     }
@@ -121,31 +123,28 @@ const validateAuthorizationRequest = (
         };
     }
 
-    // Validate code_challenge_method
-    if (!['S256', 'plain'].includes(params.code_challenge_method)) {
+    // Only S256 is accepted per RFC 7636 security recommendations
+    if (params.code_challenge_method !== 'S256') {
         return {
             valid: false,
-            message: 'code_challenge_method must be "S256" or "plain"',
+            message: 'code_challenge_method must be "S256"',
         };
     }
 
-    // Validate code_challenge format
-    if (params.code_challenge_method === 'S256') {
-        // S256 should be base64url encoded SHA256 hash
-        const base64urlRegex = /^[A-Za-z0-9_-]+$/;
-        if (
-            !base64urlRegex.test(params.code_challenge) ||
-            params.code_challenge.length !== 43
-        ) {
-            return {
-                valid: false,
-                message:
-                    'code_challenge must be base64url encoded SHA256 hash (43 characters)',
-            };
-        }
+    // Validate code_challenge format (S256: base64url encoded SHA256 hash)
+    const base64urlRegex = /^[A-Za-z0-9_-]+$/;
+    if (
+        !base64urlRegex.test(params.code_challenge) ||
+        params.code_challenge.length !== 43
+    ) {
+        return {
+            valid: false,
+            message:
+                'code_challenge must be base64url encoded SHA256 hash (43 characters)',
+        };
     }
 
-    // Validate redirect_uri (basic validation - in production, check against registered URIs)
+    // TODO: validate redirect_uri against registered URIs per client_id (RFC 6749 §3.1.2.3)
     try {
         new URL(params.redirect_uri);
     } catch {
@@ -179,7 +178,7 @@ const generateAuthorizationCode = async (
 
     // Create JWT components for authorization code
     const headers = {
-        alg: 'RS256',
+        alg: 'PS256',
         typ: 'JWT',
         kid: kmsKeyAliasName,
     };
@@ -193,7 +192,7 @@ const generateAuthorizationCode = async (
         code_challenge_method: authRequest.code_challenge_method,
         iat: nowInSeconds,
         exp: nowInSeconds + 600, // 10 minutes expiration as per OAuth 2.0 spec
-        jti: crypto.randomBytes(16).toString('hex'), // Unique identifier
+        jti: crypto.randomBytes(16).toString('hex'), // TODO: enforce single-use via persistence when /token endpoint is implemented (RFC 6749 §4.1.2)
     };
 
     const tokenComponents: TokenComponents = {
