@@ -16,6 +16,7 @@ interface TokenIssuerStackProps extends cdk.StackProps {
     artifactBucketName: string;
     serviceName: string;
     version: string;
+    dataTraceEnabled?: boolean;
 }
 
 export class TokenIssuerStack extends cdk.Stack {
@@ -112,6 +113,8 @@ export class TokenIssuerStack extends cdk.Stack {
                 environment: {
                     KMS_KEY_ALIAS_NAME: props.signingKeyAlias,
                     USER_CREDENTIALS_TABLE: tokenTable.tableName,
+                    TOKEN_ISSUER:
+                        process.env.TOKEN_ISSUER || 'https://example.com',
                 },
                 role: authTokenIssuerRole,
             },
@@ -127,7 +130,7 @@ export class TokenIssuerStack extends cdk.Stack {
             description: 'API for issuing authentication tokens',
             deployOptions: {
                 stageName: 'prod',
-                dataTraceEnabled: true,
+                dataTraceEnabled: props.dataTraceEnabled ?? false,
                 loggingLevel: apigateway.MethodLoggingLevel.INFO,
             },
         });

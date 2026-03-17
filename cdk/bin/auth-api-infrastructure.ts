@@ -28,6 +28,7 @@ const tokenIssuerStack = new TokenIssuerStack(app, 'TokenIssuerStack', {
         process.env.ARTIFACT_BUCKET_NAME || 'az-artifacts-bucket',
     serviceName: process.env.SERVICE_NAME || 'auth-api',
     version: process.env.VERSION || '0.0.1',
+    dataTraceEnabled: process.env.DATA_TRACE_ENABLED === 'true',
 });
 
 // Create echo API stack
@@ -44,6 +45,7 @@ const echoApiStack = new EchoApiStack(app, 'EchoApiStack', {
         process.env.ARTIFACT_BUCKET_NAME || 'az-artifacts-bucket',
     serviceName: process.env.SERVICE_NAME || 'auth-api',
     version: process.env.VERSION || '0.0.1',
+    dataTraceEnabled: process.env.DATA_TRACE_ENABLED === 'true',
 });
 
 // Add dependencies

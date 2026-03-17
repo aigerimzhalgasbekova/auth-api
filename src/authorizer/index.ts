@@ -14,6 +14,7 @@ import {
 export class UnauthorizedError extends Error {}
 
 const JWT_PREFIX = 'Bearer ';
+const kmsClient = new KMSClient({});
 
 type JWTHeader = {
     alg:
@@ -97,6 +98,12 @@ const authorize = async (
         throw new UnauthorizedError('not authorized to access this service');
     }
 
+    // Validate token expiry
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    if (payload.exp <= nowInSeconds) {
+        throw new UnauthorizedError('token has expired');
+    }
+
     // The signature is base64 encoded, so we need to decode it
     const signatureToVerify = Uint8Array.from(
         Buffer.from(signatureBase64, 'base64'),
@@ -110,7 +117,6 @@ const authorize = async (
         SigningAlgorithm: SigningAlgorithmSpec.RSASSA_PSS_SHA_256,
     };
 
-    const kmsClient = new KMSClient({});
     const command = new VerifyCommand(input);
     const response = await kmsClient.send(command);
 

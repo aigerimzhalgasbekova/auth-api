@@ -53,7 +53,9 @@ export const getValidatedCredentials = (headers) => {
         'base64',
     ).toString('utf-8');
     // Extract the username and password (they are separated by a colon)
-    const [username, password] = decodedCredentials.split(':');
+    const colonIndex = decodedCredentials.indexOf(':');
+    const username = decodedCredentials.substring(0, colonIndex);
+    const password = decodedCredentials.substring(colonIndex + 1);
 
     // Validate username and password
     if (!username || !password) {

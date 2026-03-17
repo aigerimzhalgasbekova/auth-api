@@ -16,8 +16,10 @@ interface ITokenComponents {
     signature?: string;
 }
 
+const kmsClient = new KMSClient({});
+const ddbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+
 export const handler = async (event: APIGatewayEvent) => {
-    console.debug(`Input event: ${JSON.stringify(event)}`);
     try {
         // get the user credentials from the Authorization header
         const { valid, username, password, message } = getValidatedCredentials(
@@ -34,7 +36,7 @@ export const handler = async (event: APIGatewayEvent) => {
         }
 
         // check if the user exists in the database
-        const exist = await existInDynamoDB(username, password);
+        const exist = await existInDynamoDB(username!, password!);
         if (!exist) {
             return {
                 isBase64Encoded: false,
@@ -45,7 +47,7 @@ export const handler = async (event: APIGatewayEvent) => {
         }
 
         // issue a JWT token
-        return await sign(username);
+        return await sign(username!);
     } catch (error) {
         console.error(`Error while processing the request: ${error}`, error);
         return {
@@ -57,8 +59,7 @@ export const handler = async (event: APIGatewayEvent) => {
     }
 };
 
-const existInDynamoDB = async (username, password) => {
-    const ddbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const existInDynamoDB = async (username: string, password: string) => {
     const queryCommand = new QueryCommand({
         TableName: process.env.USER_CREDENTIALS_TABLE,
         KeyConditionExpression: 'Username = :username and Password = :password',
@@ -71,7 +72,7 @@ const existInDynamoDB = async (username, password) => {
     return response.Items?.length === 1;
 };
 
-const sign = async (username) => {
+const sign = async (username: string) => {
     const kmsKeyAliasName = process.env.KMS_KEY_ALIAS_NAME;
 
     // create JWT components
@@ -83,7 +84,7 @@ const sign = async (username) => {
     const nowInSeconds = new Date().getTime() / 1000;
     const payload = {
         user_name: username,
-        iss: 'https://example.com',
+        iss: process.env.TOKEN_ISSUER || 'https://example.com',
         iat: Math.floor(nowInSeconds),
         // hardcoded 1 hour expiration, could be set as an environment variable
         exp: Math.floor(nowInSeconds + 3600),
@@ -98,7 +99,6 @@ const sign = async (username) => {
         tokenComponents.header + '.' + tokenComponents.payload,
     );
 
-    const kmsClient = new KMSClient({});
     const signParams = {
         KeyId: kmsKeyAliasName,
         Message: message,

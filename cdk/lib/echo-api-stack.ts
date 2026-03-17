@@ -16,6 +16,7 @@ interface EchoApiStackProps extends cdk.StackProps {
     artifactBucketName: string;
     serviceName: string;
     version: string;
+    dataTraceEnabled?: boolean;
 }
 
 export class EchoApiStack extends cdk.Stack {
@@ -117,7 +118,7 @@ export class EchoApiStack extends cdk.Stack {
             description: 'Echo API with JWT authorization',
             deployOptions: {
                 stageName: 'prod',
-                dataTraceEnabled: true,
+                dataTraceEnabled: props.dataTraceEnabled ?? false,
                 loggingLevel: apigateway.MethodLoggingLevel.INFO,
             },
         });
