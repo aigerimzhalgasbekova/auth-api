@@ -6,7 +6,6 @@ import {
 } from '@aws-sdk/client-kms';
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import base64url from 'base64url';
 import { getValidatedCredentials } from './validator';
 import { APIGatewayEvent } from 'aws-lambda';
 
@@ -92,8 +91,8 @@ const sign = async (username: string) => {
     };
 
     const tokenComponents: ITokenComponents = {
-        header: base64url(JSON.stringify(headers)),
-        payload: base64url(JSON.stringify(payload)),
+        header: Buffer.from(JSON.stringify(headers)).toString('base64url'),
+        payload: Buffer.from(JSON.stringify(payload)).toString('base64url'),
     };
     const message = Buffer.from(
         tokenComponents.header + '.' + tokenComponents.payload,
@@ -116,9 +115,9 @@ const sign = async (username: string) => {
             body: JSON.stringify({ message: 'Internal server error' }),
         };
     }
-    tokenComponents['signature'] = base64url.encode(
-        Buffer.from(signResponse.Signature),
-    );
+    tokenComponents['signature'] = Buffer.from(
+        signResponse.Signature,
+    ).toString('base64url');
     // JWT token is a concatenation of header, payload and signature separated by dots
     const token =
         tokenComponents.header +

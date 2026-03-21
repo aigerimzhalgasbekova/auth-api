@@ -20,8 +20,7 @@
   "author": "Aigerim Zhalgasbekova",
   "private": true,
   "dependencies": {
-    "@aws-sdk/client-kms": "^3.1009.0",
-    "base64url": "^3.0.1"
+    "@aws-sdk/client-kms": "^3.1009.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.146",

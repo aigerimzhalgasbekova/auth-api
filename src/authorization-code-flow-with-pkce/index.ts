@@ -5,7 +5,6 @@ import {
     SigningAlgorithmSpec,
     MessageType,
 } from '@aws-sdk/client-kms';
-import base64url from 'base64url';
 import crypto from 'crypto';
 
 interface AuthorizationRequest {
@@ -196,8 +195,8 @@ const generateAuthorizationCode = async (
     };
 
     const tokenComponents: TokenComponents = {
-        header: base64url(JSON.stringify(headers)),
-        payload: base64url(JSON.stringify(payload)),
+        header: Buffer.from(JSON.stringify(headers)).toString('base64url'),
+        payload: Buffer.from(JSON.stringify(payload)).toString('base64url'),
     };
 
     const message = Buffer.from(
@@ -217,9 +216,9 @@ const generateAuthorizationCode = async (
         throw new Error('Failed to sign authorization code');
     }
 
-    tokenComponents.signature = base64url.encode(
-        Buffer.from(signResponse.Signature),
-    );
+    tokenComponents.signature = Buffer.from(
+        signResponse.Signature,
+    ).toString('base64url');
 
     // Authorization code is a JWT token
     const authorizationCode =
