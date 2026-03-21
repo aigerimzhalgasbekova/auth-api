@@ -1,4 +1,5 @@
 import { APIGatewayEvent } from 'aws-lambda';
+import { getRedirectUriAllowlist } from './config';
 import {
     KMSClient,
     SignCommand,
@@ -150,6 +151,14 @@ const validateAuthorizationRequest = (
         return {
             valid: false,
             message: 'Invalid redirect_uri format',
+        };
+    }
+
+    const allowlist = getRedirectUriAllowlist();
+    if (allowlist.length > 0 && !allowlist.includes(params.redirect_uri)) {
+        return {
+            valid: false,
+            message: 'redirect_uri is not in the allowlist',
         };
     }
 
