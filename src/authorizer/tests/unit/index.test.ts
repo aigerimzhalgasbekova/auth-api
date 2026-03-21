@@ -110,4 +110,99 @@ describe('handler', () => {
         await expect(handler(event)).rejects.toThrow('Unauthorized');
         expect(kmsMock.calls().length).toBe(1);
     });
+
+    it('should throw UnauthorizedError if iss does not match TOKEN_ISSUER', async () => {
+        process.env.TOKEN_ISSUER = 'https://expected-issuer.com';
+        // Token has iss: 'https://example.com' which doesn't match
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+        delete process.env.TOKEN_ISSUER;
+    });
+
+    it('should throw UnauthorizedError if user_name is not a string', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 123,
+                iss: 'https://example.com',
+                iat: nowInSeconds,
+                exp: nowInSeconds + 3600,
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('should throw UnauthorizedError if iss is not a string', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 'admin',
+                iss: 123,
+                iat: nowInSeconds,
+                exp: nowInSeconds + 3600,
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('should throw UnauthorizedError if exp is not a number', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 'admin',
+                iss: 'https://example.com',
+                iat: nowInSeconds,
+                exp: 'not-a-number',
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('should throw UnauthorizedError if iat is not a number', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 'admin',
+                iss: 'https://example.com',
+                iat: 'not-a-number',
+                exp: nowInSeconds + 3600,
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+    });
 });

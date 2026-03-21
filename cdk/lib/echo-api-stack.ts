@@ -86,6 +86,8 @@ export class EchoApiStack extends cdk.Stack {
             securityGroups: [props.securityGroup],
             environment: {
                 KMS_KEY_ALIAS_NAME: props.signingKeyAlias,
+                TOKEN_ISSUER:
+                    process.env.TOKEN_ISSUER || 'https://example.com',
             },
         });
 

@@ -98,6 +98,22 @@ const authorize = async (
         throw new UnauthorizedError('not authorized to access this service');
     }
 
+    // Validate claim types
+    if (
+        typeof payload.user_name !== 'string' ||
+        typeof payload.iss !== 'string' ||
+        typeof payload.exp !== 'number' ||
+        typeof payload.iat !== 'number'
+    ) {
+        throw new UnauthorizedError('not authorized to access this service');
+    }
+
+    // Validate iss value against TOKEN_ISSUER
+    const expectedIssuer = process.env.TOKEN_ISSUER;
+    if (expectedIssuer && payload.iss !== expectedIssuer) {
+        throw new UnauthorizedError('not authorized to access this service');
+    }
+
     // Validate token expiry
     const nowInSeconds = Math.floor(Date.now() / 1000);
     if (payload.exp <= nowInSeconds) {
