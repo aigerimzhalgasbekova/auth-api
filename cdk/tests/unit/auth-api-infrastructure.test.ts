@@ -90,6 +90,17 @@ describe('AuthApiInfrastructure', () => {
             });
         });
 
+        test('creates used-authorization-codes DynamoDB table', () => {
+            template.hasResourceProperties('AWS::DynamoDB::Table', {
+                TableName: 'used-authorization-codes',
+                KeySchema: [{ AttributeName: 'jti', KeyType: 'HASH' }],
+                TimeToLiveSpecification: {
+                    AttributeName: 'ttl',
+                    Enabled: true,
+                },
+            });
+        });
+
         test('creates token issuer Lambda function', () => {
             template.hasResourceProperties('AWS::Lambda::Function', {
                 Handler: 'index.handler',

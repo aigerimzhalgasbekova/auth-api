@@ -46,6 +46,16 @@ export class TokenIssuerStack extends cdk.Stack {
             tableName: 'existing-users',
         });
 
+        // Create DynamoDB table for tracking used authorization codes (replay attack prevention)
+        const usedAuthorizationCodesTable = new dynamodb.Table(this, 'UsedAuthorizationCodes', {
+            tableName: 'used-authorization-codes',
+            partitionKey: { name: 'jti', type: dynamodb.AttributeType.STRING },
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            encryption: dynamodb.TableEncryption.AWS_MANAGED,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            timeToLiveAttribute: 'ttl',
+        });
+
         // Get code location based on LOCALDEV environment variable
         const isLocalDev = process.env.LOCALDEV === 'true';
         let lambdaCode: lambda.Code;
