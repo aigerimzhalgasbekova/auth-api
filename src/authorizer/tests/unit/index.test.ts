@@ -3,10 +3,7 @@ import {
     KMSInvalidSignatureException,
     VerifyCommand,
 } from '@aws-sdk/client-kms';
-import {
-    APIGatewayTokenAuthorizerEvent,
-    APIGatewayAuthorizerResult,
-} from 'aws-lambda';
+import { APIGatewayTokenAuthorizerEvent } from 'aws-lambda';
 import { mockClient } from 'aws-sdk-client-mock';
 import { handler, UnauthorizedError } from '../../index';
 
@@ -14,49 +11,70 @@ process.env.KMS_KEY_ALIAS_NAME = 'alias/signing-key';
 
 const kmsMock = mockClient(KMSClient);
 
+const createTestToken = () => {
+    const nowInSeconds = Math.floor(Date.now() / 1000);
+    const header = Buffer.from(
+        JSON.stringify({
+            alg: 'RS256',
+            typ: 'JWT',
+            kid: 'alias/signing-key',
+        }),
+    ).toString('base64url');
+    const payload = Buffer.from(
+        JSON.stringify({
+            user_name: 'admin',
+            iss: 'https://example.com',
+            iat: nowInSeconds,
+            exp: nowInSeconds + 3600,
+        }),
+    ).toString('base64url');
+    return { header, payload, token: `Bearer ${header}.${payload}.token` };
+};
+
 describe('handler', () => {
-    const event: APIGatewayTokenAuthorizerEvent = {
-        type: 'TOKEN',
-        authorizationToken:
-            'Bearer eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImFsaWFzL3NpZ25pbmcta2V5In0.eyJ1c2VyX25hbWUiOiJhZG1pbiIsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJpYXQiOjE3MzYwMTQzNzYsImV4cCI6MTczNjAxNzk3Nn0.token',
-        methodArn:
-            'arn:aws:execute-api:region:account-id:api-id/stage/verb/resource',
-    };
+    let event: APIGatewayTokenAuthorizerEvent;
 
     beforeEach(() => {
         jest.clearAllMocks();
         kmsMock.reset();
+        const { token } = createTestToken();
+        event = {
+            type: 'TOKEN',
+            authorizationToken: token,
+            methodArn:
+                'arn:aws:execute-api:region:account-id:api-id/stage/verb/resource',
+        };
     });
 
     it('should return the result of authorize function', async () => {
-        const expectedResult: APIGatewayAuthorizerResult = {
-            principalId: 'admin',
-            policyDocument: {
-                Version: '2012-10-17',
-                Statement: [
-                    {
-                        Action: 'execute-api:Invoke',
-                        Effect: 'Allow',
-                        Resource: event.methodArn,
-                    },
-                ],
-            },
-            context: {
-                user_name: 'admin',
-                iss: 'https://example.com',
-                iat: 1736014376,
-                exp: 1736017976,
-            },
-        };
         kmsMock.on(VerifyCommand).resolves({
             SignatureValid: true,
         });
 
         const result = await handler(event);
 
-        expect(result).toEqual(expectedResult);
+        expect(result).toEqual(
+            expect.objectContaining({
+                principalId: 'admin',
+                policyDocument: {
+                    Version: '2012-10-17',
+                    Statement: [
+                        {
+                            Action: 'execute-api:Invoke',
+                            Effect: 'Allow',
+                            Resource: event.methodArn,
+                        },
+                    ],
+                },
+            }),
+        );
+        expect(result.context).toEqual(
+            expect.objectContaining({
+                user_name: 'admin',
+                iss: 'https://example.com',
+            }),
+        );
         expect(kmsMock.calls().length).toBe(1);
-        console.log(JSON.stringify(kmsMock.call(0).args[0].input));
         expect(kmsMock.call(0).args[0].input).toEqual({
             KeyId: 'alias/signing-key',
             Message: expect.any(Uint8Array),
@@ -91,5 +109,100 @@ describe('handler', () => {
 
         await expect(handler(event)).rejects.toThrow('Unauthorized');
         expect(kmsMock.calls().length).toBe(1);
+    });
+
+    it('should throw UnauthorizedError if iss does not match TOKEN_ISSUER', async () => {
+        process.env.TOKEN_ISSUER = 'https://expected-issuer.com';
+        // Token has iss: 'https://example.com' which doesn't match
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+        delete process.env.TOKEN_ISSUER;
+    });
+
+    it('should throw UnauthorizedError if user_name is not a string', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 123,
+                iss: 'https://example.com',
+                iat: nowInSeconds,
+                exp: nowInSeconds + 3600,
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('should throw UnauthorizedError if iss is not a string', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 'admin',
+                iss: 123,
+                iat: nowInSeconds,
+                exp: nowInSeconds + 3600,
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('should throw UnauthorizedError if exp is not a number', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 'admin',
+                iss: 'https://example.com',
+                iat: nowInSeconds,
+                exp: 'not-a-number',
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+    });
+
+    it('should throw UnauthorizedError if iat is not a number', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 'admin',
+                iss: 'https://example.com',
+                iat: 'not-a-number',
+                exp: nowInSeconds + 3600,
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
     });
 });

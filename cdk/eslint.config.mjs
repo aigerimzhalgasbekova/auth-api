@@ -1,54 +1,21 @@
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import prettier from "eslint-plugin-prettier";
-import globals from "globals";
-import tsParser from "@typescript-eslint/parser";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import eslint from '@eslint/js';
+import tseslint from 'typescript-eslint';
+import prettierPlugin from 'eslint-plugin-prettier/recommended';
+import { createBaseConfig } from '../eslint.config.base.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const compat = new FlatCompat({
-    baseDirectory: __dirname,
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all
-});
+const baseConfig = createBaseConfig({ eslint, tseslint, prettierPlugin });
 
-export default [{
-    ignores: ["**/build/", "**/dist/", "**/coverage/", "**/*.js", "**/cdk.out/"],
-}, ...compat.extends(
-    "plugin:@typescript-eslint/eslint-recommended",
-    "plugin:@typescript-eslint/recommended",
-), {
-
-    files: ["**/*.ts", "**/*.tsx"],
-    plugins: {
-        "@typescript-eslint": typescriptEslint,
-        prettier,
+export default tseslint.config(
+    {
+        ignores: ['cdk.out/**'],
     },
-
-    languageOptions: {
-        globals: {
-            ...Object.fromEntries(Object.entries(globals.commonjs).map(([key]) => [key, "off"])),
-            ...globals.node,
-            ...globals.mocha,
-            ...globals.jest,
-            Atomics: "readonly",
-            SharedArrayBuffer: "readonly",
-        },
-
-        parser: tsParser,
-        ecmaVersion: 2022,
-
-        parserOptions: {
-            tsconfigRootDir: __dirname,
-            project: ["./tsconfig.json", "./tests/tsconfig.json"],
+    ...baseConfig,
+    {
+        languageOptions: {
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+            },
         },
     },
-
-    rules: {
-        "prettier/prettier": 2,
-        eqeqeq: "warn",
-    },
-}];
+);

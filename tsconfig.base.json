@@ -2,7 +2,7 @@
     "extends": "./tsconfig-node-22.json",
     "compilerOptions": {
         "declaration": true,
-        "noImplicitAny": false,
+        "noImplicitAny": true,
         "noLib": false,
         "sourceMap": true,
         "pretty": true,

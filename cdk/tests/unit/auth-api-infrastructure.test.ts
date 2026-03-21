@@ -68,25 +68,39 @@ describe('AuthApiInfrastructure', () => {
                         AttributeName: 'Username',
                         AttributeType: 'S',
                     },
-                    {
-                        AttributeName: 'Password',
-                        AttributeType: 'S',
-                    },
                 ],
                 KeySchema: [
                     {
                         AttributeName: 'Username',
                         KeyType: 'HASH',
                     },
-                    {
-                        AttributeName: 'Password',
-                        KeyType: 'RANGE',
-                    },
                 ],
                 SSESpecification: {
                     SSEEnabled: true,
                 },
                 TableName: 'existing-users',
+            });
+        });
+
+        test('creates used-authorization-codes DynamoDB table', () => {
+            template.hasResourceProperties('AWS::DynamoDB::Table', {
+                TableName: 'used-authorization-codes',
+                KeySchema: [{ AttributeName: 'jti', KeyType: 'HASH' }],
+                TimeToLiveSpecification: {
+                    AttributeName: 'ttl',
+                    Enabled: true,
+                },
+            });
+        });
+
+        test('configures API Gateway throttling on token-issuer API', () => {
+            template.hasResourceProperties('AWS::ApiGateway::Stage', {
+                MethodSettings: Match.arrayWith([
+                    Match.objectLike({
+                        ThrottlingRateLimit: Match.anyValue(),
+                        ThrottlingBurstLimit: Match.anyValue(),
+                    }),
+                ]),
             });
         });
 
@@ -179,6 +193,17 @@ describe('AuthApiInfrastructure', () => {
                         },
                     ],
                 },
+            });
+        });
+
+        test('configures API Gateway throttling on echo API', () => {
+            template.hasResourceProperties('AWS::ApiGateway::Stage', {
+                MethodSettings: Match.arrayWith([
+                    Match.objectLike({
+                        ThrottlingRateLimit: Match.anyValue(),
+                        ThrottlingBurstLimit: Match.anyValue(),
+                    }),
+                ]),
             });
         });
 

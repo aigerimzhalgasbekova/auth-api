@@ -13,6 +13,7 @@ describe('Authorization Code Flow with PKCE', () => {
 
     afterEach(() => {
         delete process.env.KMS_KEY_ALIAS_NAME;
+        delete process.env.REDIRECT_URI_ALLOWLIST;
     });
 
     describe('handler', () => {
@@ -129,6 +130,71 @@ describe('Authorization Code Flow with PKCE', () => {
             expect(result.headers?.Location).toContain('code=');
             expect(result.headers?.Location).toContain('state=test-state');
             expect(result.body).toBe('');
+        });
+
+        it('should return 400 when redirect_uri is not in allowlist', async () => {
+            process.env.REDIRECT_URI_ALLOWLIST =
+                'https://allowed.com/callback,https://also-allowed.com/callback';
+
+            const event = createEvent({
+                response_type: 'code',
+                client_id: 'test-client',
+                redirect_uri: 'https://evil.com/callback',
+                code_challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+                code_challenge_method: 'S256',
+            });
+
+            const result = await handler(event);
+
+            expect(result.statusCode).toBe(400);
+            expect(JSON.parse(result.body)).toEqual({
+                error: 'invalid_request',
+                error_description: 'redirect_uri is not in the allowlist',
+            });
+        });
+
+        it('should return 302 when redirect_uri is in allowlist', async () => {
+            process.env.REDIRECT_URI_ALLOWLIST =
+                'https://allowed.com/callback, https://example.com/callback';
+
+            const event = createEvent({
+                response_type: 'code',
+                client_id: 'test-client',
+                redirect_uri: 'https://example.com/callback',
+                code_challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+                code_challenge_method: 'S256',
+                state: 'test-state',
+            });
+
+            kmsMock.on(SignCommand).resolves({
+                Signature: Buffer.from('test-signature'),
+            });
+
+            const result = await handler(event);
+
+            expect(result.statusCode).toBe(302);
+            expect(result.headers?.Location).toContain(
+                'https://example.com/callback',
+            );
+        });
+
+        it('should allow any valid redirect_uri when REDIRECT_URI_ALLOWLIST is not set', async () => {
+            // REDIRECT_URI_ALLOWLIST is not set (backward compatibility)
+            const event = createEvent({
+                response_type: 'code',
+                client_id: 'test-client',
+                redirect_uri: 'https://any-domain.com/callback',
+                code_challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+                code_challenge_method: 'S256',
+            });
+
+            kmsMock.on(SignCommand).resolves({
+                Signature: Buffer.from('test-signature'),
+            });
+
+            const result = await handler(event);
+
+            expect(result.statusCode).toBe(302);
         });
 
         it('should handle KMS signing failure', async () => {

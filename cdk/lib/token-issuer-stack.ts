@@ -16,6 +16,7 @@ interface TokenIssuerStackProps extends cdk.StackProps {
     artifactBucketName: string;
     serviceName: string;
     version: string;
+    dataTraceEnabled?: boolean;
 }
 
 export class TokenIssuerStack extends cdk.Stack {
@@ -33,16 +34,30 @@ export class TokenIssuerStack extends cdk.Stack {
         });
 
         // Create DynamoDB table for storing existing users information
+        // NOTE: Removing Password sort key is a breaking change for existing tables.
+        // Existing tables require data migration (hash plaintext passwords into password_hash attribute).
         const tokenTable = new dynamodb.Table(this, 'TokenTable', {
             partitionKey: {
                 name: 'Username',
                 type: dynamodb.AttributeType.STRING,
             },
-            sortKey: { name: 'Password', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption: dynamodb.TableEncryption.AWS_MANAGED,
             removalPolicy: cdk.RemovalPolicy.RETAIN,
             tableName: 'existing-users',
+        });
+
+        // Create DynamoDB table for tracking used authorization codes (replay attack prevention)
+        new dynamodb.Table(this, 'UsedAuthorizationCodes', {
+            tableName: 'used-authorization-codes',
+            partitionKey: {
+                name: 'jti',
+                type: dynamodb.AttributeType.STRING,
+            },
+            billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
+            encryption: dynamodb.TableEncryption.AWS_MANAGED,
+            removalPolicy: cdk.RemovalPolicy.DESTROY,
+            timeToLiveAttribute: 'ttl',
         });
 
         // Get code location based on LOCALDEV environment variable
@@ -112,6 +127,8 @@ export class TokenIssuerStack extends cdk.Stack {
                 environment: {
                     KMS_KEY_ALIAS_NAME: props.signingKeyAlias,
                     USER_CREDENTIALS_TABLE: tokenTable.tableName,
+                    TOKEN_ISSUER:
+                        process.env.TOKEN_ISSUER || 'https://example.com',
                 },
                 role: authTokenIssuerRole,
             },
@@ -127,8 +144,14 @@ export class TokenIssuerStack extends cdk.Stack {
             description: 'API for issuing authentication tokens',
             deployOptions: {
                 stageName: 'prod',
-                dataTraceEnabled: true,
+                dataTraceEnabled: props.dataTraceEnabled ?? false,
                 loggingLevel: apigateway.MethodLoggingLevel.INFO,
+                methodOptions: {
+                    '/*/*': {
+                        throttlingRateLimit: 10,
+                        throttlingBurstLimit: 20,
+                    },
+                },
             },
         });
 

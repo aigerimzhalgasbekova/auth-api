@@ -16,6 +16,7 @@ interface EchoApiStackProps extends cdk.StackProps {
     artifactBucketName: string;
     serviceName: string;
     version: string;
+    dataTraceEnabled?: boolean;
 }
 
 export class EchoApiStack extends cdk.Stack {
@@ -85,6 +86,7 @@ export class EchoApiStack extends cdk.Stack {
             securityGroups: [props.securityGroup],
             environment: {
                 KMS_KEY_ALIAS_NAME: props.signingKeyAlias,
+                TOKEN_ISSUER: process.env.TOKEN_ISSUER || 'https://example.com',
             },
         });
 
@@ -117,8 +119,14 @@ export class EchoApiStack extends cdk.Stack {
             description: 'Echo API with JWT authorization',
             deployOptions: {
                 stageName: 'prod',
-                dataTraceEnabled: true,
+                dataTraceEnabled: props.dataTraceEnabled ?? false,
                 loggingLevel: apigateway.MethodLoggingLevel.INFO,
+                methodOptions: {
+                    '/*/*': {
+                        throttlingRateLimit: 10,
+                        throttlingBurstLimit: 20,
+                    },
+                },
             },
         });
 
