@@ -143,6 +143,12 @@ export class TokenIssuerStack extends cdk.Stack {
                 stageName: 'prod',
                 dataTraceEnabled: props.dataTraceEnabled ?? false,
                 loggingLevel: apigateway.MethodLoggingLevel.INFO,
+                methodOptions: {
+                    '/*/*': {
+                        throttlingRateLimit: 10,
+                        throttlingBurstLimit: 20,
+                    },
+                },
             },
         });
 

@@ -93,6 +93,17 @@ describe('AuthApiInfrastructure', () => {
             });
         });
 
+        test('configures API Gateway throttling on token-issuer API', () => {
+            template.hasResourceProperties('AWS::ApiGateway::Stage', {
+                MethodSettings: Match.arrayWith([
+                    Match.objectLike({
+                        ThrottlingRateLimit: Match.anyValue(),
+                        ThrottlingBurstLimit: Match.anyValue(),
+                    }),
+                ]),
+            });
+        });
+
         test('creates token issuer Lambda function', () => {
             template.hasResourceProperties('AWS::Lambda::Function', {
                 Handler: 'index.handler',
@@ -182,6 +193,17 @@ describe('AuthApiInfrastructure', () => {
                         },
                     ],
                 },
+            });
+        });
+
+        test('configures API Gateway throttling on echo API', () => {
+            template.hasResourceProperties('AWS::ApiGateway::Stage', {
+                MethodSettings: Match.arrayWith([
+                    Match.objectLike({
+                        ThrottlingRateLimit: Match.anyValue(),
+                        ThrottlingBurstLimit: Match.anyValue(),
+                    }),
+                ]),
             });
         });
 
