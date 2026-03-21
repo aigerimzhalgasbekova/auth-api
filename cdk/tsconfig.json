@@ -6,4 +6,9 @@
     ],
     "outDir": "build"
   },
+  "exclude": [
+    "node_modules",
+    "build",
+    "cdk.out"
+  ]
 }

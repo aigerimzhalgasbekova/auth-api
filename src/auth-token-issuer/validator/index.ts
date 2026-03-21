@@ -1,4 +1,6 @@
-export const getValidatedCredentials = (headers) => {
+import { APIGatewayProxyEventHeaders } from 'aws-lambda';
+
+export const getValidatedCredentials = (headers: APIGatewayProxyEventHeaders) => {
     // Check if the Authorization header exists
     if (!headers || !headers['Authorization']) {
         return {
