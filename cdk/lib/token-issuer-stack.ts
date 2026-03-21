@@ -34,12 +34,13 @@ export class TokenIssuerStack extends cdk.Stack {
         });
 
         // Create DynamoDB table for storing existing users information
+        // NOTE: Removing Password sort key is a breaking change for existing tables.
+        // Existing tables require data migration (hash plaintext passwords into password_hash attribute).
         const tokenTable = new dynamodb.Table(this, 'TokenTable', {
             partitionKey: {
                 name: 'Username',
                 type: dynamodb.AttributeType.STRING,
             },
-            sortKey: { name: 'Password', type: dynamodb.AttributeType.STRING },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption: dynamodb.TableEncryption.AWS_MANAGED,
             removalPolicy: cdk.RemovalPolicy.RETAIN,

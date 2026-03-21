@@ -7,6 +7,7 @@ import {
 import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { getValidatedCredentials } from './validator';
+import { verifyPassword } from './password';
 import { APIGatewayEvent } from 'aws-lambda';
 
 interface ITokenComponents {
@@ -34,14 +35,17 @@ export const handler = async (event: APIGatewayEvent) => {
             };
         }
 
-        // check if the user exists in the database
-        const exist = await existInDynamoDB(username!, password!);
-        if (!exist) {
+        // check if the user exists in the database and verify password
+        const user = await findUser(username!);
+        if (
+            !user ||
+            !(await verifyPassword(password!, user.password_hash as string))
+        ) {
             return {
                 isBase64Encoded: false,
                 statusCode: 401,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: 'Unauthorized' }),
+                body: JSON.stringify({ message: 'Invalid credentials' }),
             };
         }
 
@@ -58,17 +62,16 @@ export const handler = async (event: APIGatewayEvent) => {
     }
 };
 
-const existInDynamoDB = async (username: string, password: string) => {
+const findUser = async (username: string) => {
     const queryCommand = new QueryCommand({
         TableName: process.env.USER_CREDENTIALS_TABLE,
-        KeyConditionExpression: 'Username = :username and Password = :password',
+        KeyConditionExpression: 'Username = :username',
         ExpressionAttributeValues: {
             ':username': username,
-            ':password': password,
         },
     });
     const response = await ddbDocClient.send(queryCommand);
-    return response.Items?.length === 1;
+    return response.Items?.[0] ?? null;
 };
 
 const sign = async (username: string) => {

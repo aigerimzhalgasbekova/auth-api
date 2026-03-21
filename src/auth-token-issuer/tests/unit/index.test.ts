@@ -3,10 +3,17 @@ import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { handler } from '../../index';
 import { APIGatewayEvent } from 'aws-lambda';
+import { hashPassword } from '../../password';
 
 describe('Test issueing JWT token', () => {
     const ddbDocMock = mockClient(DynamoDBDocumentClient);
     const kmsMock = mockClient(KMSClient);
+    let testPasswordHash: string;
+
+    beforeAll(async () => {
+        // Pre-compute a bcrypt hash for the test password "test"
+        testPasswordHash = await hashPassword('test');
+    });
 
     beforeEach(() => {
         jest.setTimeout(1000 * 60 * 10);
@@ -23,6 +30,27 @@ describe('Test issueing JWT token', () => {
         };
         ddbDocMock.on(QueryCommand).resolves({
             Items: [],
+        });
+        const response = await handler(event as unknown as APIGatewayEvent);
+        expect(response.statusCode).toBe(401);
+        expect(ddbDocMock.calls().length).toBe(1);
+        expect(kmsMock.calls().length).toBe(0);
+    });
+
+    test('should return 401 when password is incorrect', async () => {
+        const event = {
+            headers: {
+                // wrong:test base64 encoded (wrong password)
+                Authorization: 'Basic dGVzdDp3cm9uZw==',
+            },
+        };
+        ddbDocMock.on(QueryCommand).resolves({
+            Items: [
+                {
+                    Username: 'test',
+                    password_hash: testPasswordHash,
+                },
+            ],
         });
         const response = await handler(event as unknown as APIGatewayEvent);
         expect(response.statusCode).toBe(401);
@@ -52,7 +80,7 @@ describe('Test issueing JWT token', () => {
             Items: [
                 {
                     Username: 'test',
-                    Password: 'test',
+                    password_hash: testPasswordHash,
                 },
             ],
         });
@@ -75,7 +103,7 @@ describe('Test issueing JWT token', () => {
             Items: [
                 {
                     Username: 'test',
-                    Password: 'test',
+                    password_hash: testPasswordHash,
                 },
             ],
         });
@@ -102,7 +130,7 @@ describe('Test issueing JWT token', () => {
             Items: [
                 {
                     Username: 'test',
-                    Password: 'test',
+                    password_hash: testPasswordHash,
                 },
             ],
         });
@@ -120,7 +148,7 @@ describe('Test issueing JWT token', () => {
             Items: [
                 {
                     Username: 'test',
-                    Password: 'test',
+                    password_hash: testPasswordHash,
                 },
             ],
         });

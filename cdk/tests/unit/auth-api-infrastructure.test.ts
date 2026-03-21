@@ -68,19 +68,11 @@ describe('AuthApiInfrastructure', () => {
                         AttributeName: 'Username',
                         AttributeType: 'S',
                     },
-                    {
-                        AttributeName: 'Password',
-                        AttributeType: 'S',
-                    },
                 ],
                 KeySchema: [
                     {
                         AttributeName: 'Username',
                         KeyType: 'HASH',
-                    },
-                    {
-                        AttributeName: 'Password',
-                        KeyType: 'RANGE',
                     },
                 ],
                 SSESpecification: {
