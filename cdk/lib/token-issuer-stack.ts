@@ -48,9 +48,12 @@ export class TokenIssuerStack extends cdk.Stack {
         });
 
         // Create DynamoDB table for tracking used authorization codes (replay attack prevention)
-        const usedAuthorizationCodesTable = new dynamodb.Table(this, 'UsedAuthorizationCodes', {
+        new dynamodb.Table(this, 'UsedAuthorizationCodes', {
             tableName: 'used-authorization-codes',
-            partitionKey: { name: 'jti', type: dynamodb.AttributeType.STRING },
+            partitionKey: {
+                name: 'jti',
+                type: dynamodb.AttributeType.STRING,
+            },
             billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
             encryption: dynamodb.TableEncryption.AWS_MANAGED,
             removalPolicy: cdk.RemovalPolicy.DESTROY,

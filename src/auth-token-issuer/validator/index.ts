@@ -1,6 +1,8 @@
 import { APIGatewayProxyEventHeaders } from 'aws-lambda';
 
-export const getValidatedCredentials = (headers: APIGatewayProxyEventHeaders) => {
+export const getValidatedCredentials = (
+    headers: APIGatewayProxyEventHeaders,
+) => {
     // Check if the Authorization header exists
     if (!headers || !headers['Authorization']) {
         return {
@@ -70,7 +72,7 @@ export const getValidatedCredentials = (headers: APIGatewayProxyEventHeaders) =>
 
     // Define regular expressions for allowed characters in username and password (depending on security policies)
     const usernameRegex = /^[a-zA-Z0-9_]+$/; // Alphanumeric and underscores are allowed in username
-    const passwordRegex = /^[a-zA-Z0-9!@#$%^&*()_+=\-]+$/; // Alphanumeric and specific special characters allowed in password
+    const passwordRegex = /^[a-zA-Z0-9!@#$%^&*()_+=-]+$/; // Alphanumeric and specific special characters allowed in password
 
     // Validate the username
     if (!usernameRegex.test(username)) {

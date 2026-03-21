@@ -116,9 +116,9 @@ const sign = async (username: string) => {
             body: JSON.stringify({ message: 'Internal server error' }),
         };
     }
-    tokenComponents['signature'] = Buffer.from(
-        signResponse.Signature,
-    ).toString('base64url');
+    tokenComponents['signature'] = Buffer.from(signResponse.Signature).toString(
+        'base64url',
+    );
     // JWT token is a concatenation of header, payload and signature separated by dots
     const token =
         tokenComponents.header +

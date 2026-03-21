@@ -225,9 +225,9 @@ const generateAuthorizationCode = async (
         throw new Error('Failed to sign authorization code');
     }
 
-    tokenComponents.signature = Buffer.from(
-        signResponse.Signature,
-    ).toString('base64url');
+    tokenComponents.signature = Buffer.from(signResponse.Signature).toString(
+        'base64url',
+    );
 
     // Authorization code is a JWT token
     const authorizationCode =
