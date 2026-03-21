@@ -4,7 +4,7 @@ import {
     SignCommand,
     SigningAlgorithmSpec,
 } from '@aws-sdk/client-kms';
-import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { getValidatedCredentials } from './validator';
 import { verifyPassword } from './password';
@@ -63,15 +63,13 @@ export const handler = async (event: APIGatewayEvent) => {
 };
 
 const findUser = async (username: string) => {
-    const queryCommand = new QueryCommand({
-        TableName: process.env.USER_CREDENTIALS_TABLE,
-        KeyConditionExpression: 'Username = :username',
-        ExpressionAttributeValues: {
-            ':username': username,
-        },
-    });
-    const response = await ddbDocClient.send(queryCommand);
-    return response.Items?.[0] ?? null;
+    const response = await ddbDocClient.send(
+        new GetCommand({
+            TableName: process.env.USER_CREDENTIALS_TABLE,
+            Key: { Username: username },
+        }),
+    );
+    return response.Item ?? null;
 };
 
 const sign = async (username: string) => {

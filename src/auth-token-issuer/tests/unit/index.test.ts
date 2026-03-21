@@ -1,5 +1,5 @@
 import { KMSClient, SignCommand } from '@aws-sdk/client-kms';
-import { DynamoDBDocumentClient, QueryCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, GetCommand } from '@aws-sdk/lib-dynamodb';
 import { mockClient } from 'aws-sdk-client-mock';
 import { handler } from '../../index';
 import { APIGatewayEvent } from 'aws-lambda';
@@ -28,8 +28,8 @@ describe('Test issueing JWT token', () => {
                 Authorization: 'Basic dGVzdDp0ZXN0',
             },
         };
-        ddbDocMock.on(QueryCommand).resolves({
-            Items: [],
+        ddbDocMock.on(GetCommand).resolves({
+            Item: undefined,
         });
         const response = await handler(event as unknown as APIGatewayEvent);
         expect(response.statusCode).toBe(401);
@@ -44,13 +44,11 @@ describe('Test issueing JWT token', () => {
                 Authorization: 'Basic dGVzdDp3cm9uZw==',
             },
         };
-        ddbDocMock.on(QueryCommand).resolves({
-            Items: [
-                {
-                    Username: 'test',
-                    password_hash: testPasswordHash,
-                },
-            ],
+        ddbDocMock.on(GetCommand).resolves({
+            Item: {
+                Username: 'test',
+                password_hash: testPasswordHash,
+            },
         });
         const response = await handler(event as unknown as APIGatewayEvent);
         expect(response.statusCode).toBe(401);
@@ -76,13 +74,11 @@ describe('Test issueing JWT token', () => {
                 Authorization: 'Basic dGVzdDp0ZXN0', // test:test base64 encoded
             },
         };
-        ddbDocMock.on(QueryCommand).resolves({
-            Items: [
-                {
-                    Username: 'test',
-                    password_hash: testPasswordHash,
-                },
-            ],
+        ddbDocMock.on(GetCommand).resolves({
+            Item: {
+                Username: 'test',
+                password_hash: testPasswordHash,
+            },
         });
         kmsMock.on(SignCommand).resolves({
             Signature: 'signature' as unknown as Uint8Array,
@@ -99,13 +95,11 @@ describe('Test issueing JWT token', () => {
                 Authorization: 'Basic dGVzdDp0ZXN0', // test:test base64 encoded
             },
         };
-        ddbDocMock.on(QueryCommand).resolves({
-            Items: [
-                {
-                    Username: 'test',
-                    password_hash: testPasswordHash,
-                },
-            ],
+        ddbDocMock.on(GetCommand).resolves({
+            Item: {
+                Username: 'test',
+                password_hash: testPasswordHash,
+            },
         });
         kmsMock.on(SignCommand).resolves({
             Signature: Buffer.from([0xff, 0xfe, 0xfd]),
@@ -126,13 +120,11 @@ describe('Test issueing JWT token', () => {
                 Authorization: 'Basic dGVzdDp0ZXN0', // test:test base64 encoded
             },
         };
-        ddbDocMock.on(QueryCommand).resolves({
-            Items: [
-                {
-                    Username: 'test',
-                    password_hash: testPasswordHash,
-                },
-            ],
+        ddbDocMock.on(GetCommand).resolves({
+            Item: {
+                Username: 'test',
+                password_hash: testPasswordHash,
+            },
         });
         kmsMock.on(SignCommand).resolves({});
         const response = await handler(event as unknown as APIGatewayEvent);
@@ -144,13 +136,11 @@ describe('Test issueing JWT token', () => {
                 Authorization: 'Basic dGVzdDp0ZXN0', // test:test base64 encoded
             },
         };
-        ddbDocMock.on(QueryCommand).resolves({
-            Items: [
-                {
-                    Username: 'test',
-                    password_hash: testPasswordHash,
-                },
-            ],
+        ddbDocMock.on(GetCommand).resolves({
+            Item: {
+                Username: 'test',
+                password_hash: testPasswordHash,
+            },
         });
         kmsMock
             .on(SignCommand)
@@ -164,7 +154,7 @@ describe('Test issueing JWT token', () => {
                 Authorization: 'Basic dGVzdDp0ZXN0', // test:test base64 encoded
             },
         };
-        ddbDocMock.on(QueryCommand).rejects(new Error('Internal server error'));
+        ddbDocMock.on(GetCommand).rejects(new Error('Internal server error'));
         const response = await handler(event as unknown as APIGatewayEvent);
         expect(response.statusCode).toBe(500);
     });
