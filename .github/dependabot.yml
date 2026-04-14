@@ -15,12 +15,12 @@ updates:
       - "/src/echo"
     schedule:
       interval: "weekly"
-      day: "monday"
+      day: "wednesday"
       time: "05:00"
       timezone: "Europe/Helsinki"
-    open-pull-requests-limit: 1
+    open-pull-requests-limit: 3
     groups:
-      all-dependencies:
+      per-dependency:
         group-by: dependency-name
     ignore:
       - dependency-name: "*"
