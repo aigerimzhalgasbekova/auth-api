@@ -9,6 +9,7 @@ updates:
   - package-ecosystem: "npm"
     directories:
       - "/"
+      - "/cdk"
       - "/src/auth-token-issuer"
       - "/src/authorization-code-flow-with-pkce"
       - "/src/authorizer"
