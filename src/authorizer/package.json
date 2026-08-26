@@ -19,7 +19,7 @@
   },
   "private": true,
   "devDependencies": {
-    "@aws-sdk/client-kms": "^3.1111.0",
+    "@aws-sdk/client-kms": "^3.1116.0",
     "@types/aws-lambda": "^8.10.162",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.20.1",
