@@ -8,6 +8,7 @@ import { mockClient } from 'aws-sdk-client-mock';
 import { handler, UnauthorizedError } from '../../index';
 
 process.env.KMS_KEY_ALIAS_NAME = 'alias/signing-key';
+process.env.TOKEN_ISSUER = 'https://example.com';
 
 const kmsMock = mockClient(KMSClient);
 
@@ -15,7 +16,7 @@ const createTestToken = () => {
     const nowInSeconds = Math.floor(Date.now() / 1000);
     const header = Buffer.from(
         JSON.stringify({
-            alg: 'RS256',
+            alg: 'PS256',
             typ: 'JWT',
             kid: 'alias/signing-key',
         }),
@@ -115,14 +116,55 @@ describe('handler', () => {
         process.env.TOKEN_ISSUER = 'https://expected-issuer.com';
         // Token has iss: 'https://example.com' which doesn't match
         await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+        process.env.TOKEN_ISSUER = 'https://example.com';
+    });
+
+    it('should throw UnauthorizedError if TOKEN_ISSUER is not configured', async () => {
         delete process.env.TOKEN_ISSUER;
+        kmsMock.on(VerifyCommand).resolves({ SignatureValid: true });
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+        expect(kmsMock.calls().length).toBe(0);
+        process.env.TOKEN_ISSUER = 'https://example.com';
+    });
+
+    it('should throw UnauthorizedError if alg is not PS256', async () => {
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        const header = Buffer.from(
+            JSON.stringify({
+                alg: 'RS256',
+                typ: 'JWT',
+                kid: 'alias/signing-key',
+            }),
+        ).toString('base64url');
+        const payload = Buffer.from(
+            JSON.stringify({
+                user_name: 'admin',
+                iss: 'https://example.com',
+                iat: nowInSeconds,
+                exp: nowInSeconds + 3600,
+            }),
+        ).toString('base64url');
+        event.authorizationToken = `Bearer ${header}.${payload}.token`;
+        kmsMock.on(VerifyCommand).resolves({ SignatureValid: true });
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+        expect(kmsMock.calls().length).toBe(0);
+    });
+
+    it('should throw UnauthorizedError if the token is not three parts', async () => {
+        const { header, payload } = createTestToken();
+        event.authorizationToken = `Bearer ${header}.${payload}`;
+
+        await expect(handler(event)).rejects.toThrow(UnauthorizedError);
+        expect(kmsMock.calls().length).toBe(0);
     });
 
     it('should throw UnauthorizedError if user_name is not a string', async () => {
         const nowInSeconds = Math.floor(Date.now() / 1000);
         const header = Buffer.from(
             JSON.stringify({
-                alg: 'RS256',
+                alg: 'PS256',
                 typ: 'JWT',
                 kid: 'alias/signing-key',
             }),
@@ -144,7 +186,7 @@ describe('handler', () => {
         const nowInSeconds = Math.floor(Date.now() / 1000);
         const header = Buffer.from(
             JSON.stringify({
-                alg: 'RS256',
+                alg: 'PS256',
                 typ: 'JWT',
                 kid: 'alias/signing-key',
             }),
@@ -166,7 +208,7 @@ describe('handler', () => {
         const nowInSeconds = Math.floor(Date.now() / 1000);
         const header = Buffer.from(
             JSON.stringify({
-                alg: 'RS256',
+                alg: 'PS256',
                 typ: 'JWT',
                 kid: 'alias/signing-key',
             }),
@@ -188,7 +230,7 @@ describe('handler', () => {
         const nowInSeconds = Math.floor(Date.now() / 1000);
         const header = Buffer.from(
             JSON.stringify({
-                alg: 'RS256',
+                alg: 'PS256',
                 typ: 'JWT',
                 kid: 'alias/signing-key',
             }),

@@ -1,5 +1,8 @@
 import { APIGatewayProxyEventHeaders } from 'aws-lambda';
 
+// 512 base64 characters decode to at most 384 bytes of "username:password"
+const MAX_BASE64_CREDENTIALS_LENGTH = 512;
+
 export const getValidatedCredentials = (
     headers: APIGatewayProxyEventHeaders,
 ) => {
@@ -32,6 +35,15 @@ export const getValidatedCredentials = (
             message: 'Credentials are missing in the Authorization header',
         };
     }
+    // Cap the credential size before decoding so an oversized header cannot be
+    // used to force expensive decoding and password hashing work
+    if (base64Credentials.length > MAX_BASE64_CREDENTIALS_LENGTH) {
+        return {
+            valid: false,
+            message: 'Credentials in the Authorization header are too long',
+        };
+    }
+
     // Regular expression to match valid Base64 characters
     const base64Regex = /^[A-Za-z0-9+/=]+$/;
 

@@ -15,15 +15,21 @@ The following items have been addressed on the `fix/security-and-quality-improve
 - ~~Add request rate limiting~~ — API Gateway throttling added (10 req/s, 20 burst)
 - ~~Add input validation for JWT claims~~ — type checks added for all claims
 - ~~Validate `iss` claim in authorizer~~ — validated against `TOKEN_ISSUER` env var
+- ~~Fail-open `iss` validation~~ — authorizer now rejects all tokens when `TOKEN_ISSUER` is unset
+- ~~Fail-open `redirect_uri` allowlist~~ — PKCE endpoint now rejects all URIs when the allowlist is empty
+- ~~Unvalidated JWT `alg` header~~ — pinned to `PS256`, malformed tokens rejected before decoding
+- ~~Echo Lambda reflected and logged the caller's `Authorization` header~~ — headers stripped
+- ~~Username enumeration via response timing~~ — password verified against a dummy hash when the user is absent
+- ~~Unbounded credentials in the `Authorization` header~~ — capped at 512 base64 characters
+- ~~Authorizer and PKCE Lambdas logged full token claims / request events~~ — reduced to non-sensitive fields
+- ~~Stale `dynamodb:Query` IAM permission~~ — removed from the auth-token-issuer role
 
 ---
 
 ## P1 — High Priority
 
 ### Wire `REDIRECT_URI_ALLOWLIST` env var in deployment
-The redirect URI allowlist validation code is in place (`src/authorization-code-flow-with-pkce/config.ts`), but the `REDIRECT_URI_ALLOWLIST` environment variable is not configured in any CDK stack. The PKCE Lambda is not currently deployed via CDK, so this env var must be set through whatever deployment mechanism is used.
-
-Without it, the allowlist defaults to empty and all valid URIs are accepted (backward-compatible but not secure-by-default).
+The redirect URI allowlist is now enforced fail-closed: with `REDIRECT_URI_ALLOWLIST` unset or empty, every authorization request is rejected with `400`. The PKCE Lambda is not deployed via CDK, so this env var must be set through whatever deployment mechanism is used, otherwise the endpoint issues no codes at all.
 
 ### Implement single-use authorization code enforcement at `/token` endpoint
 The `used-authorization-codes` DynamoDB table exists with `jti` partition key and TTL, but no `/token` endpoint exists yet to consume authorization codes. When implemented, the endpoint must:
@@ -33,19 +39,9 @@ The `used-authorization-codes` DynamoDB table exists with `jti` partition key an
 
 **Table**: `used-authorization-codes` (already provisioned)
 
-### Remove stale `dynamodb:Query` IAM permission
-After switching from `QueryCommand` to `GetCommand` for user lookups, the `dynamodb:Query` permission on the auth-token-issuer Lambda role is no longer needed. Remove it to follow the principle of least privilege.
-
-**File**: `cdk/lib/token-issuer-stack.ts`
-
 ---
 
 ## P2 — Medium Priority
-
-### Make `iss` validation mandatory (fail-closed)
-The authorizer's `iss` validation is currently opt-in: if `TOKEN_ISSUER` env var is unset, the check is skipped entirely. While CDK provides a fallback value, a misconfigured deployment would silently accept tokens from any issuer. Consider making the check mandatory (throw if `TOKEN_ISSUER` is missing) or at minimum logging a warning.
-
-**File**: `src/authorizer/index.ts`
 
 ### Move `@aws-sdk/client-kms` to devDependencies in PKCE package
 `@aws-sdk/client-kms` is listed as a production dependency in `src/authorization-code-flow-with-pkce/package.json` but is provided by the Lambda runtime. Moving it to `devDependencies` (consistent with auth-token-issuer) would reduce bundle size.

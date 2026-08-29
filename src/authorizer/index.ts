@@ -69,9 +69,13 @@ const authorize = async (
         throw new UnauthorizedError('not authorized to access this service');
     }
 
-    const token = authorizationToken.replace(JWT_PREFIX, '');
+    const token = authorizationToken.slice(JWT_PREFIX.length);
 
-    const [headerBase64, payloadBase64, signatureBase64] = token.split('.');
+    const parts = token.split('.');
+    if (parts.length !== 3 || parts.some((part) => !part)) {
+        throw new UnauthorizedError('not authorized to access this service');
+    }
+    const [headerBase64, payloadBase64, signatureBase64] = parts;
 
     const header: JWTHeader = JSON.parse(
         Buffer.from(headerBase64, 'base64').toString(),
@@ -79,13 +83,15 @@ const authorize = async (
     const payload: JWTPayload = JSON.parse(
         Buffer.from(payloadBase64, 'base64').toString(),
     );
-    console.debug('Decoded info', {
-        header,
-        payload,
-        kmsKeyId,
-    });
     //validate header and payload
-    if (!header || header.kid !== kmsKeyId || header.typ !== 'JWT') {
+    // alg is pinned to the only algorithm this service signs with, so a token
+    // cannot ask to be verified under a weaker one
+    if (
+        !header ||
+        header.kid !== kmsKeyId ||
+        header.typ !== 'JWT' ||
+        header.alg !== 'PS256'
+    ) {
         throw new UnauthorizedError('not authorized to access this service');
     }
     if (
@@ -108,9 +114,10 @@ const authorize = async (
         throw new UnauthorizedError('not authorized to access this service');
     }
 
-    // Validate iss value against TOKEN_ISSUER
+    // Validate iss value against TOKEN_ISSUER. Fail closed: a deployment
+    // without TOKEN_ISSUER must not accept tokens from any issuer.
     const expectedIssuer = process.env.TOKEN_ISSUER;
-    if (expectedIssuer && payload.iss !== expectedIssuer) {
+    if (!expectedIssuer || payload.iss !== expectedIssuer) {
         throw new UnauthorizedError('not authorized to access this service');
     }
 

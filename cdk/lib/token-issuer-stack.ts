@@ -96,7 +96,7 @@ export class TokenIssuerStack extends cdk.Stack {
                     statements: [
                         new iam.PolicyStatement({
                             effect: iam.Effect.ALLOW,
-                            actions: ['dynamodb:Query', 'dynamodb:GetItem'],
+                            actions: ['dynamodb:GetItem'],
                             resources: [tokenTable.tableArn],
                         }),
                     ],

@@ -9,6 +9,7 @@ describe('Authorization Code Flow with PKCE', () => {
     beforeEach(() => {
         kmsMock.reset();
         process.env.KMS_KEY_ALIAS_NAME = 'alias/signing-key';
+        process.env.REDIRECT_URI_ALLOWLIST = 'https://example.com/callback';
     });
 
     afterEach(() => {
@@ -178,8 +179,8 @@ describe('Authorization Code Flow with PKCE', () => {
             );
         });
 
-        it('should allow any valid redirect_uri when REDIRECT_URI_ALLOWLIST is not set', async () => {
-            // REDIRECT_URI_ALLOWLIST is not set (backward compatibility)
+        it('should reject every redirect_uri when REDIRECT_URI_ALLOWLIST is not set', async () => {
+            delete process.env.REDIRECT_URI_ALLOWLIST;
             const event = createEvent({
                 response_type: 'code',
                 client_id: 'test-client',
@@ -194,7 +195,12 @@ describe('Authorization Code Flow with PKCE', () => {
 
             const result = await handler(event);
 
-            expect(result.statusCode).toBe(302);
+            expect(result.statusCode).toBe(400);
+            expect(JSON.parse(result.body)).toEqual({
+                error: 'invalid_request',
+                error_description: 'redirect_uri is not in the allowlist',
+            });
+            expect(kmsMock.calls().length).toBe(0);
         });
 
         it('should handle KMS signing failure', async () => {

@@ -36,7 +36,11 @@ interface TokenComponents {
 }
 
 export const handler = async (event: APIGatewayEvent) => {
-    console.debug(`Authorization request: ${JSON.stringify(event)}`);
+    // The event carries request headers, so only the parameters this endpoint
+    // acts on are logged
+    console.debug(
+        `Authorization request from client_id: ${event.queryStringParameters?.client_id}`,
+    );
 
     try {
         // Parse query parameters
@@ -154,8 +158,11 @@ const validateAuthorizationRequest = (
         };
     }
 
+    // Fail closed: an unset or empty REDIRECT_URI_ALLOWLIST rejects every URI.
+    // Accepting any URI would hand the authorization code to whatever host the
+    // caller names.
     const allowlist = getRedirectUriAllowlist();
-    if (allowlist.length > 0 && !allowlist.includes(params.redirect_uri)) {
+    if (!allowlist.includes(params.redirect_uri)) {
         return {
             valid: false,
             message: 'redirect_uri is not in the allowlist',
