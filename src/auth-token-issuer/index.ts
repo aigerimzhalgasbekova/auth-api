@@ -19,6 +19,11 @@ interface ITokenComponents {
 const kmsClient = new KMSClient({});
 const ddbDocClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
+// bcrypt hash of a random value nobody holds. Verified against when the user
+// does not exist so that response time does not reveal which usernames exist.
+const ABSENT_USER_PASSWORD_HASH =
+    '$2a$12$9CgqzK5dqgFwslozqUbeU.N6qEWHgSkOy5WkzOqKpMyIz6bhz4RA2';
+
 export const handler = async (event: APIGatewayEvent) => {
     try {
         // get the user credentials from the Authorization header
@@ -37,10 +42,11 @@ export const handler = async (event: APIGatewayEvent) => {
 
         // check if the user exists in the database and verify password
         const user = await findUser(username!);
-        if (
-            !user ||
-            !(await verifyPassword(password!, user.password_hash as string))
-        ) {
+        const passwordMatches = await verifyPassword(
+            password!,
+            (user?.password_hash as string) ?? ABSENT_USER_PASSWORD_HASH,
+        );
+        if (!user || !passwordMatches) {
             return {
                 isBase64Encoded: false,
                 statusCode: 401,

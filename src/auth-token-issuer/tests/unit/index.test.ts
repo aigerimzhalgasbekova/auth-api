@@ -4,6 +4,7 @@ import { mockClient } from 'aws-sdk-client-mock';
 import { handler } from '../../index';
 import { APIGatewayEvent } from 'aws-lambda';
 import { hashPassword } from '../../password';
+import * as password from '../../password';
 
 describe('Test issueing JWT token', () => {
     const ddbDocMock = mockClient(DynamoDBDocumentClient);
@@ -35,6 +36,34 @@ describe('Test issueing JWT token', () => {
         expect(response.statusCode).toBe(401);
         expect(ddbDocMock.calls().length).toBe(1);
         expect(kmsMock.calls().length).toBe(0);
+    });
+
+    test('should verify a password even when the user does not exist', async () => {
+        // otherwise the faster no-user path reveals which usernames are registered
+        const verifySpy = jest.spyOn(password, 'verifyPassword');
+        const event = {
+            headers: {
+                Authorization: 'Basic dGVzdDp0ZXN0',
+            },
+        };
+        ddbDocMock.on(GetCommand).resolves({ Item: undefined });
+
+        const response = await handler(event as unknown as APIGatewayEvent);
+
+        expect(response.statusCode).toBe(401);
+        expect(verifySpy).toHaveBeenCalledTimes(1);
+        verifySpy.mockRestore();
+    });
+
+    test('should return 400 when the credentials are oversized', async () => {
+        const event = {
+            headers: {
+                Authorization: `Basic ${'A'.repeat(1024)}`,
+            },
+        };
+        const response = await handler(event as unknown as APIGatewayEvent);
+        expect(response.statusCode).toBe(400);
+        expect(ddbDocMock.calls().length).toBe(0);
     });
 
     test('should return 401 when password is incorrect', async () => {

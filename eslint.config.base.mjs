@@ -18,6 +18,11 @@ export function createBaseConfig({ eslint, tseslint, prettierPlugin }) {
             rules: {
                 'prettier/prettier': 'error',
                 eqeqeq: 'warn',
+                // rest destructuring is how fields are omitted from an object
+                '@typescript-eslint/no-unused-vars': [
+                    'error',
+                    { ignoreRestSiblings: true },
+                ],
             },
         },
     ];
